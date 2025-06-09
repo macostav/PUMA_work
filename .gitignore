@@ -3,3 +3,6 @@
 
 # Ignore data files
 *.txt
+
+# Ignore mesh ; occupies too much space
+*.mphtxt
