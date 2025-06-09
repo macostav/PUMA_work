@@ -1,0 +1,5 @@
+# Ignore root files
+*.root
+
+# Ignore data files
+*.txt

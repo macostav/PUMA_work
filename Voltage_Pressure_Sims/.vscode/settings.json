@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "DriftLineRKF_Argon.C": "cpp",
+        "simulation.C": "cpp",
+        "voltage_pressure_simulation.C": "cpp",
+        "ComsolIntegrationTest.C": "cpp",
+        "DriftLineRKF_Test.C": "cpp",
+        "DriftLineRKF_LXe.C": "cpp",
+        "iosfwd": "cpp"
+    }
+}
