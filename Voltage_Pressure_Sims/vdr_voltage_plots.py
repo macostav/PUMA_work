@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     # Set up canvas
     c = ROOT.TCanvas("c", "Drift Speed vs Voltage", 800, 600)
-    mg = ROOT.TMultiGraph()
+    mg = ROOT.TMultiGraph() # Contains the graphs for the individual pressures
 
     colors = [ROOT.kRed, ROOT.kBlue, ROOT.kGreen+3, ROOT.kMagenta, ROOT.kOrange+7, ROOT.kYellow-3, ROOT.kBlack, ROOT.kCyan+3]
     color_index = 0

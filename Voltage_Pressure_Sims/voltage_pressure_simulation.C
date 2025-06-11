@@ -6,6 +6,9 @@
 #include <sstream>
 #include <regex>
 #include <vector>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/wait.h>
 
 #include <TApplication.h>
 #include <TCanvas.h>
@@ -157,13 +160,46 @@ void run_simulation(double pres, int volt, ComponentComsol *pumaModel)
   delete hSpeed;
 }
 
+void safe_run_simulation(double pressure, int voltage, ComponentComsol* model) {
+/*
+This function runs simulation. But if for whatever reason we get stuck at a particular pressure or volume for a long time,
+we move on instead of staying stuck.
+*/
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        // Child process
+        run_simulation(pressure, voltage, model);
+        exit(0);
+    } else if (pid > 0) {
+        // Parent process: wait with timeout
+        int status;
+        int timeout_seconds = 40;  // Adjust this
+        int waited = 0;
+
+        while (waitpid(pid, &status, WNOHANG) == 0 && waited < timeout_seconds) {
+            sleep(1);
+            waited++;
+        }
+
+        if (waited >= timeout_seconds) {
+            std::cerr << "Timeout for pressure " << pressure << ", killing process\n";
+            kill(pid, SIGKILL);
+            waitpid(pid, &status, 0);  // Clean up
+        }
+    } else {
+        std::cerr << "Fork failed\n";
+    }
+}
+
 int main()
 {
-  std::vector<int> voltages = {200};
+  std::vector<int> voltages = {250, 300, 400, 1400, 1500, 1600};
+  
   std::vector<double> pressures = {158.0272814, 305.83624583, 497.8134186, 703.14866857, 897.54054586, 1000.95292865, 1003.96149327,
                                    1005.96709465, 1106.13661436, 1304.82907969, 1498.69503398};
 
-    for (int voltage: voltages) {
+  for (int voltage: voltages) {
     // Load model just once (depends only on voltage)
     std::ostringstream potFile;
     potFile << "/home/macosta/PUMA/miguel_work/Voltage_Pressure_Sims/Comsol_Files/potential_" << voltage << ".txt";
@@ -176,7 +212,7 @@ int main()
 
       std::cout << "Model Initialized \n";
       for (double pressure : pressures) {
-        run_simulation(pressure, voltage, &pumaModel);
+        safe_run_simulation(pressure, voltage, &pumaModel);
       }
     }
       
