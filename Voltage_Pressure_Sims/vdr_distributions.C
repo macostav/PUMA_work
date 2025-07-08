@@ -34,6 +34,8 @@
 
 using namespace Garfield;
 
+// We want to save the distribution of speeds to characterize uncertainty and understand simulation behaviour. //
+
 std::pair<double, double> randInCircle()
 {
   /*
@@ -58,7 +60,7 @@ std::pair<double, double> randInCircle()
   return {x, y};
 }
 
-void run_simulation(double pres, int volt, ComponentComsol *pumaModel, const std::string& csvFileName)
+void run_simulation(double pres, int volt, ComponentComsol *pumaModel)
 {
   const double pressure = pres; // [Torr]
 
@@ -66,11 +68,11 @@ void run_simulation(double pres, int volt, ComponentComsol *pumaModel, const std
   MediumMagboltz gas;
   gas.SetTemperature(293.15);
   gas.SetPressure(pressure);
-  gas.SetComposition("Xe", 100.); // !!! Can change this
-  gas.LoadIonMobility("/home/macosta/ella_work/PUMA_Tests/Simulations/IonMobility_Xe+_P32_Xe.txt");
-  //gas.LoadIonMobility("/home/macosta/ella_work/PUMA_Tests/Simulations/IonMobility_Ar+_Ar.txt");
+  gas.SetComposition("Ar", 100.); // !!! Can change this
+  //gas.LoadIonMobility("/home/macosta/ella_work/PUMA_Tests/Simulations/IonMobility_Xe+_P32_Xe.txt");
+  gas.LoadIonMobility("/home/macosta/ella_work/PUMA_Tests/Simulations/IonMobility_Ar+_Ar.txt");
 
-  std::string gasFileName = "gas_tables/xenon_" + std::to_string(int(pressure)) + "Torr.gas"; // !!!
+  std::string gasFileName = "gas_tables/argon_" + std::to_string(int(pressure)) + "Torr.gas"; // !!!
     
     if (!gas.LoadGasFile(gasFileName)) {
         std::cout << "Generating new gas table for " << pressure << " Torr...\n";
@@ -102,7 +104,7 @@ void run_simulation(double pres, int volt, ComponentComsol *pumaModel, const std
   drift.SetSensor(&sensor);
 
   // Histogram for e- speed
-  TH1F *hSpeed = new TH1F("hSpeed", "Electron Drift Speeds;Speed [cm/microsecond];Counts", 100, 0, 1);
+  TH1F *hSpeed = new TH1F("hSpeed", "Electron Drift Speeds;Speed [cm/s];Counts", 100, 0, 1e6);
 
 int nElectronsTarget = 10000;
 int nElectronsSimulated = 0;
@@ -136,7 +138,7 @@ while (nElectronsSimulated < nElectronsTarget) {
 
       if (time > 0) {
         double speed = distance / time; // cm/ns
-        hSpeed->Fill(speed * 1e3); // convert to cm/μs
+        hSpeed->Fill(speed * 1e9); // convert to cm/s
       }
 
       nElectronsSimulated++;
@@ -144,20 +146,24 @@ while (nElectronsSimulated < nElectronsTarget) {
   }
 }
 
-  double mean_drift_speed = hSpeed->GetMean();
-  double sigma_drift_speed = hSpeed->GetStdDev();
-  std::cout << "Mean drift speed: " << mean_drift_speed << " cm/μs\n";
-  std::cout << "Standard deviation: " << sigma_drift_speed << " cm/μs\n";
+  // Canvas where we will draw the hist
+  TCanvas* cHist = new TCanvas("cHist", "Electron Speeds", 800, 600);
+  hSpeed->Draw();
 
-  // Append results to csvFile
-  std::ofstream csvFile(csvFileName, std::ios::app);
-  csvFile << volt << "," << pressure << "," << mean_drift_speed << "," << sigma_drift_speed << "\n";
-  csvFile.close();
+  // Construct filename
+  std::ostringstream fname;
+  fname << "argon_drift_speed_P" << static_cast<int>(pressure) // !!!
+      << "_V" << static_cast<int>(volt) << ".png";
+
+  // Save as image
+  cHist->SaveAs(fname.str().c_str());
+
 
   delete hSpeed;
+  delete cHist;
 }
 
-void safe_run_simulation(double pressure, int voltage, ComponentComsol* model, const std::string& csvFileName) {
+void safe_run_simulation(double pressure, int voltage, ComponentComsol* model) {
 /*
 This function runs simulation. But if for whatever reason we get stuck at a particular pressure or volume for a long time,
 we move on instead of staying stuck.
@@ -166,7 +172,7 @@ we move on instead of staying stuck.
     pid_t pid = fork();
     if (pid == 0) {
         // Child process
-        run_simulation(pressure, voltage, model, csvFileName);
+        run_simulation(pressure, voltage, model);
         exit(0);
     } else if (pid > 0) {
         // Parent process: wait with timeout
@@ -191,14 +197,6 @@ we move on instead of staying stuck.
 
 int main()
 {
-  std::string csvFileName = "drift_speed_results_gas_table_xenon.csv"; // !!!
-
-  // Create or clear file, and write header only once
-  if (!std::filesystem::exists(csvFileName)) {
-    std::ofstream csvFile(csvFileName);
-    csvFile << "Voltage[V],Pressure[Torr],MeanDriftSpeed[cm/us],StdDev[cm/us]\n";
-    csvFile.close();
-  }
 
   std::vector<int> voltages = {200,225,250,300, 350, 400, 500, 600, 700, 800, 850, 900, 1000,
     1100, 1200, 1300, 1400, 1500, 1600, 1603, 1700, 1800, 1900};
@@ -206,7 +204,7 @@ int main()
   //std::vector<double> pressures = {158.0272814,305.83624583,497.8134186,703.14866857,897.54054586,1000.95292865, 1003.96149327, 
   //  1005.96709465, 1106.13661436, 1304.82907969, 1498.69503398};
 
-  std::vector<double> pressures = {158.0272814, 305.83624583, 1000.95292865, 1005.96709465,1106.13661436};
+  std::vector<double> pressures = {158.0272814};
 
   for (int voltage: voltages) {
     // Load model just once (depends only on voltage)
@@ -221,7 +219,7 @@ int main()
 
       std::cout << "Model Initialized \n";
       for (double pressure : pressures) {
-        safe_run_simulation(pressure, voltage, &pumaModel, csvFileName);
+        safe_run_simulation(pressure, voltage, &pumaModel);
       }
     }
       

@@ -11,13 +11,13 @@ if __name__ == "__main__":
     pressure_data = defaultdict(lambda: {"voltages": [], "speeds": [], "errors": []})
 
     # Read the CSV
-    with open("drift_speed_stuff/pressures_voltages.csv", newline='') as csvfile:
+    with open("../drift_speed_results_gas_table_xenon.csv", newline='') as csvfile: # !!!
         reader = csv.DictReader(csvfile)
         for row in reader:
-            V = float(row["Voltages [V]"])
-            P = float(row["Pressures [Tor]"])
-            S = float(row["Drift Speed [cm/s]"])
-            E = float(row["SD [cm/s]"])
+            V = float(row["Voltage[V]"])
+            P = float(row["Pressure[Torr]"])
+            S = float(row["MeanDriftSpeed[cm/us]"])
+            E = float(row["StdDev[cm/us]"])
             pressure_data[P]["voltages"].append(V)
             pressure_data[P]["speeds"].append(S)
             pressure_data[P]["errors"].append(E)
@@ -32,21 +32,21 @@ if __name__ == "__main__":
     # Get sorted list of pressures for consistent color mapping
     pressures = sorted(pressure_data.keys())
     norm = plt.Normalize(min(pressures), max(pressures))
-    cmap = plt.cm.Reds  # color map ; other good option is "plasma"
+    cmap = plt.cm.rainbow  # color map ; other good option is "plasma"
 
     # Plot each dataset
     for pressure in pressures:
         data = pressure_data[pressure]
         voltages = np.array(data["voltages"])
-        speeds = np.array(data["speeds"])
-        errors = np.array(data["errors"])
+        speeds = np.array(data["speeds"]) * 1e6
+        errors = np.array(data["errors"]) * 1e6
 
         color = cmap(norm(pressure))
         ax.errorbar(voltages, speeds, yerr=errors, fmt='o-', color=color,
                     label=f"{pressure:.1f} Torr", capsize=3)
 
     # Labels and title
-    ax.set_title("")
+    ax.set_title("Xenon Simulation") # !!!
     ax.set_xlabel("Voltage [V]")
     ax.set_ylabel("Drift Speed [cm/s]")
 
@@ -60,5 +60,7 @@ if __name__ == "__main__":
     # ax.legend(loc="best", fontsize=8)
 
     # Save or show the plot
+    #plt.xlim(475, 650)
+    #plt.ylim(2e5,7e5)
     plt.tight_layout()
-    plt.savefig("drift_speed_vs_voltage_matplotlib2.png", dpi=300)
+    plt.savefig("vdr_voltage_xenon_test.png", dpi=300) # !!!

@@ -6,3 +6,6 @@
 
 # Ignore mesh ; occupies too much space
 *.mphtxt
+
+# Ignore gas tables
+*.gas
