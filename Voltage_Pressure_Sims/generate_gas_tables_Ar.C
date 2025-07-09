@@ -36,15 +36,16 @@ using namespace Garfield;
 
 int main() {
 
-    std::vector<double> pressures = {897.54054586 /*, 1304.82907969*/};
+    std::vector<double> pressures = {897.54054586, 1304.82907969};
 
   
   for (double pressure: pressures){
     // Setup gas
     
   MediumMagboltz gas;
-  gas.SetPenningParameters(0.0, 0.0);  // dummy, but may re-trigger energy grid setup
-  gas.SetMaxElectronEnergy(1000.);     // retry here
+  //gas.SetPenningParameters(0.0, 0.0);  // dummy, but may re-trigger energy grid setup
+  gas.SetMaxElectronEnergy(500.);     // retry here
+  gas.EnableAutoEnergyLimit(false); // use the max electron energy specified above
   gas.SetTemperature(293.15);
   gas.SetPressure(pressure);
   gas.SetComposition("Ar", 100.);
