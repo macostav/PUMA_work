@@ -1,5 +1,10 @@
 {
     "files.associations": {
-        "generate_gas_tables_Ar.C": "cpp"
+        "generate_gas_tables_Ar.C": "cpp",
+        "generate_gas_tables_Xe.C": "cpp",
+        "voltage_pressure_simulation.C": "cpp",
+        "vdr_distributions.C": "cpp",
+        "DriftLineRKF_Argon.C": "cpp",
+        "new_sim.C": "cpp"
     }
 }

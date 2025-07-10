@@ -43,7 +43,6 @@ int main() {
     // Setup gas
     
   MediumMagboltz gas;
-  //gas.SetPenningParameters(0.0, 0.0);  // dummy, but may re-trigger energy grid setup
   gas.SetMaxElectronEnergy(500.);     // retry here
   gas.EnableAutoEnergyLimit(false); // use the max electron energy specified above
   gas.SetTemperature(293.15);

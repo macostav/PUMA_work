@@ -31,6 +31,7 @@
 #include "Garfield/ViewField.hh"
 #include "Garfield/ViewFEMesh.hh"
 #include "Garfield/ViewMedium.hh"
+#include <Garfield/AvalancheMicroscopic.hh>
 
 using namespace Garfield;
 
@@ -83,66 +84,58 @@ void run_simulation(double pres, int volt, ComponentComsol *pumaModel, const std
   gas.Initialise(false);
   std::cout << "Gas Initialized \n";
 
-  // Attach gas to pre-loaded model
-  pumaModel->SetGas(&gas);
+// Attach gas to pre-loaded model
+pumaModel->SetGas(&gas);
 
-  // Sensor setup
-  Sensor sensor;
-  sensor.AddComponent(pumaModel);
-  sensor.SetArea(-3, -3, -15, 3, 3, 5); // [cm]
-  std::cout << "Sensor Initialized \n";
+// Sensor setup
+Sensor sensor;
+sensor.AddComponent(pumaModel);
+sensor.SetArea(-3, -3, -15, 3, 3, 5); // [cm]
+std::cout << "Sensor Initialized \n";
 
-  // TrackHeed setup
-  TrackHeed trackHeed;
-  trackHeed.SetParticle("e-");
-  trackHeed.SetSensor(&sensor);
-  std::cout << "TrackHeed Initialized \n";
+// AvalancheMicroscopic for photoelectron drift
+AvalancheMicroscopic drift;
+drift.SetSensor(&sensor);
+drift.EnableSignalCalculation();
+std::cout << "AvalancheMicroscopic Initialized \n";
 
-  DriftLineRKF drift;
-  drift.SetSensor(&sensor);
+// DriftLineRKF still available if you want to visualize field lines
+DriftLineRKF rkf;
+rkf.SetSensor(&sensor);
 
-  // Histogram for e- speed
-  TH1F *hSpeed = new TH1F("hSpeed", "Electron Drift Speeds;Speed [cm/microsecond];Counts", 100, 0, 1);
+// Histogram for drift speeds
+TH1D* hSpeed = new TH1D("hSpeed", "Drift Speed;Speed [cm/#mu s];Counts", 100, 0, 10);
 
+// Run the simulation
 int nElectronsTarget = 10000;
 int nElectronsSimulated = 0;
 
 while (nElectronsSimulated < nElectronsTarget) {
-  auto [x0, y0] = randInCircle();
-  double z0 = 4.32;
-  double energy = 1e6;
-  trackHeed.NewTrack(x0, y0, z0, 0, 0, -1, energy); // or (0, 0, -1, energy) if -z drift
+  // Generate random photoelectron position in a circle on the top surface
+  //auto [x0, y0] = randInCircle();
+  double x0, y0;
+  std::tie(x0, y0) = randInCircle();
+  double z0 = 4.32; // starting near the cathode (in cm)
+  double t0 = 0.0;
 
-  double xc, yc, zc, tc;
-  int nc, nsec;
-  double ec, esec;
+  // Simulate transport of one photoelectron
+  drift.TransportElectron(x0, y0, z0, t0);
 
-  while (trackHeed.GetCluster(xc, yc, zc, tc, nc, nsec, ec, esec)) { // !!!
-    for (int i = 0; i < nc; ++i) {
-      // Stop early if we've hit the target
-      if (nElectronsSimulated >= nElectronsTarget) break;
+  // Get the final position and time
+  double x1, y1, z1, t1;
+  int status;
+  drift.GetElectronEndpoint(0, x0, y0, z0, t0, x1, y1, z1, t1, status);
 
-      drift.DriftElectron(xc, yc, zc, tc);
+  if (status == 0 && t1 > t0) {  // status 0 = success
+    double dz = z0 - z1;         // cm
+    double dt = t1 - t0;         // ns
 
-      double x1, y1, z1, t1;
-      int status2;
-      drift.GetEndPoint(x1, y1, z1, t1, status2);
-
-      double dx = x1 - xc;
-      double dy = y1 - yc;
-      double dz = z1 - zc;
-      double distance = std::sqrt(dx * dx + dy * dy + dz * dz);
-      double time = t1 - tc;
-
-      if (time > 0) {
-        double speed = distance / time; // cm/ns
-        hSpeed->Fill(speed * 1e3); // convert to cm/μs
-      }
-
-      nElectronsSimulated++;
-    }
+    double vDrift = dz / dt * 1e3; // cm/μs
+    hSpeed->Fill(vDrift);
+    nElectronsSimulated++;
   }
 }
+
 
 // Avalanche mc or avalanche microscopic
 
@@ -193,7 +186,7 @@ we move on instead of staying stuck.
 
 int main()
 {
-  std::string csvFileName = "drift_speed_results_gas_table_xenon.csv"; // !!!
+  std::string csvFileName = "drift_speed_results_gas_table_xenon_new_simulation.csv"; // !!!
 
   // Create or clear file, and write header only once
   if (!std::filesystem::exists(csvFileName)) {
@@ -208,7 +201,7 @@ int main()
   //std::vector<double> pressures = {158.0272814,305.83624583,497.8134186,703.14866857,897.54054586,1000.95292865, 1003.96149327, 
   //  1005.96709465, 1106.13661436, 1304.82907969, 1498.69503398};
 
-  std::vector<double> pressures = {158.0272814, 305.83624583, 1000.95292865, 1005.96709465,1106.13661436};
+  std::vector<double> pressures = {158.0272814};
 
   for (int voltage: voltages) {
     // Load model just once (depends only on voltage)
