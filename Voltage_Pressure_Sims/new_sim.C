@@ -93,44 +93,44 @@ sensor.AddComponent(pumaModel);
 sensor.SetArea(-3, -3, -15, 3, 3, 5); // [cm]
 std::cout << "Sensor Initialized \n";
 
-// AvalancheMicroscopic for photoelectron drift
-AvalancheMicroscopic drift;
-drift.SetSensor(&sensor);
-drift.EnableSignalCalculation();
-std::cout << "AvalancheMicroscopic Initialized \n";
-
 // DriftLineRKF still available if you want to visualize field lines
-DriftLineRKF rkf;
-rkf.SetSensor(&sensor);
+DriftLineRKF drift;
+drift.SetSensor(&sensor);
 
 // Histogram for drift speeds
 TH1D* hSpeed = new TH1D("hSpeed", "Drift Speed;Speed [cm/#mu s];Counts", 100, 0, 10);
 
 // Run the simulation
-int nElectronsTarget = 10000;
+int nElectronsTarget = 100; // !!! try 10,000
 int nElectronsSimulated = 0;
+
+std::cout << "Before loop \n";
 
 while (nElectronsSimulated < nElectronsTarget) {
   // Generate random photoelectron position in a circle on the top surface
-  //auto [x0, y0] = randInCircle();
-  double x0, y0;
-  std::tie(x0, y0) = randInCircle();
+
+  std::cout << "In loop \n";
+  auto [x0, y0] = randInCircle();
   double z0 = 4.32; // starting near the cathode (in cm)
   double t0 = 0.0;
 
-  // Simulate transport of one photoelectron
-  drift.TransportElectron(x0, y0, z0, t0);
+  std::cout << "Before drifting \n";
 
-  // Get the final position and time
+  drift.DriftElectron(x0, y0, z0, t0);
+
+  std::cout << "Electron drifted \n";
+
   double x1, y1, z1, t1;
   int status;
-  drift.GetElectronEndpoint(0, x0, y0, z0, t0, x1, y1, z1, t1, status);
+  drift.GetEndPoint(x1, y1, z1, t1, status);
+  
 
   if (status == 0 && t1 > t0) {  // status 0 = success
-    double dz = z0 - z1;         // cm
+    
+    double driftLength = sqrt((x1 - x0)*(x1 - x0) + (y1 - y0)*(y1 - y0) + (z1 - z0)*(z1 - z0));
     double dt = t1 - t0;         // ns
 
-    double vDrift = dz / dt * 1e3; // cm/μs
+    double vDrift = driftLength / dt * 1e3; // cm/μs
     hSpeed->Fill(vDrift);
     nElectronsSimulated++;
   }
@@ -195,13 +195,11 @@ int main()
     csvFile.close();
   }
 
-  std::vector<int> voltages = {200,225,250,300, 350, 400, 500, 600, 700, 800, 850, 900, 1000,
-    1100, 1200, 1300, 1400, 1500, 1600, 1603, 1700, 1800, 1900};
+  std::vector<int> voltages = {/*200,225,250,300, 350, 400, 500, 600, 700, 800, 850, 900, 1000,
+    1100, 1200, 1300, 1400, 1500, 1600, 1603, 1700, 1800,*/ 1900};
   
-  //std::vector<double> pressures = {158.0272814,305.83624583,497.8134186,703.14866857,897.54054586,1000.95292865, 1003.96149327, 
-  //  1005.96709465, 1106.13661436, 1304.82907969, 1498.69503398};
-
-  std::vector<double> pressures = {158.0272814};
+  std::vector<double> pressures = {158.0272814,305.83624583,/*497.8134186,703.14866857,897.54054586,*/1000.95292865/*, 1003.96149327*/, 
+    1005.96709465, 1106.13661436/*, 1304.82907969, 1498.69503398*/};
 
   for (int voltage: voltages) {
     // Load model just once (depends only on voltage)
