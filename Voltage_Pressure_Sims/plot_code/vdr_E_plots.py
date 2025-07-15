@@ -26,7 +26,7 @@ def HV_to_E(HV):
 if __name__ == "__main__":
     pressure_data = defaultdict(lambda: {"voltages": [], "speeds": [], "errors": []})
 
-    with open("../drift_speed_results_gas_table_argon.csv", newline='') as csvfile: #!!!
+    with open("../data/drift_speed_results_gas_table_xenon.csv", newline='') as csvfile: #!!!
         reader = csv.DictReader(csvfile)
         for row in reader:
             V = float(row["Voltage[V]"])
@@ -83,10 +83,10 @@ if __name__ == "__main__":
 
     ax.set_xlabel(r"$E/N$ [V$\cdot$cm$^2$]")
     ax.set_ylabel("Drift Speed [cm/s]")
-    ax.set_title("Argon Simulation") # !!!
+    ax.set_title("Xenon Simulation") # !!!
 
     cbar = fig.colorbar(sm, ax=ax)
     cbar.set_label("Electric Field [V/cm]")
 
     plt.tight_layout()
-    plt.savefig("vdr_EN_argon.png", dpi=300) # !!!
+    plt.savefig("vdr_EN_xenon.png", dpi=300) # !!!

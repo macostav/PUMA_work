@@ -70,7 +70,7 @@ void run_simulation(double pres, int volt, ComponentComsol *pumaModel, const std
   gas.LoadIonMobility("/home/macosta/ella_work/PUMA_Tests/Simulations/IonMobility_Xe+_P32_Xe.txt");
   //gas.LoadIonMobility("/home/macosta/ella_work/PUMA_Tests/Simulations/IonMobility_Ar+_Ar.txt");
 
-  std::string gasFileName = "xenon_" + std::to_string(int(pressure)) + "Torr.gas"; // !!!
+  std::string gasFileName = "gas_tables/xenon_" + std::to_string(int(pressure)) + "Torr.gas"; // !!!
     
     if (!gas.LoadGasFile(gasFileName)) {
         std::cout << "Generating new gas table for " << pressure << " Torr...\n";
@@ -193,7 +193,7 @@ we move on instead of staying stuck.
 
 int main()
 {
-  std::string csvFileName = "drift_speed_results_gas_table_xenon_missing.csv"; // !!!
+  std::string csvFileName = "drift_speed_results_gas_table_xenon_missing_2.csv"; // !!!
 
   // Create or clear file, and write header only once
   if (!std::filesystem::exists(csvFileName)) {
@@ -208,7 +208,7 @@ int main()
   //std::vector<double> pressures = {158.0272814,305.83624583,497.8134186,703.14866857,897.54054586,1000.95292865, 1003.96149327, 
   //  1005.96709465, 1106.13661436, 1304.82907969, 1498.69503398};
 
-  std::vector<double> pressures = {497.8134186, 703.14866857,897.54054586,1003.96149327,1304.82907969, 1498.69503398};
+  std::vector<double> pressures = {497.8134186};
 
   for (int voltage: voltages) {
     // Load model just once (depends only on voltage)

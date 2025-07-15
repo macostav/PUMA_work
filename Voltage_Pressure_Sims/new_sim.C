@@ -101,31 +101,23 @@ drift.SetSensor(&sensor);
 TH1D* hSpeed = new TH1D("hSpeed", "Drift Speed;Speed [cm/#mu s];Counts", 100, 0, 10);
 
 // Run the simulation
-int nElectronsTarget = 100; // !!! try 10,000
+int nElectronsTarget = 10000; // !!! try 10,000
 int nElectronsSimulated = 0;
-
-std::cout << "Before loop \n";
 
 while (nElectronsSimulated < nElectronsTarget) {
   // Generate random photoelectron position in a circle on the top surface
-
-  std::cout << "In loop \n";
   auto [x0, y0] = randInCircle();
   double z0 = 4.32; // starting near the cathode (in cm)
   double t0 = 0.0;
 
-  std::cout << "Before drifting \n";
-
   drift.DriftElectron(x0, y0, z0, t0);
-
-  std::cout << "Electron drifted \n";
 
   double x1, y1, z1, t1;
   int status;
   drift.GetEndPoint(x1, y1, z1, t1, status);
   
 
-  if (status == 0 && t1 > t0) {  // status 0 = success
+  if (t1 > t0) {  // status 0 = success
     
     double driftLength = sqrt((x1 - x0)*(x1 - x0) + (y1 - y0)*(y1 - y0) + (z1 - z0)*(z1 - z0));
     double dt = t1 - t0;         // ns
