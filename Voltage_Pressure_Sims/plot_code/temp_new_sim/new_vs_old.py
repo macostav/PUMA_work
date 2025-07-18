@@ -8,19 +8,32 @@ from matplotlib.ticker import ScalarFormatter
 
 if __name__ == "__main__":
     # Data containers
-    pressure_data = defaultdict(lambda: {"voltages": [], "speeds": [], "errors": []})
+    pressure_data_old = defaultdict(lambda: {"voltages": [], "speeds": [], "errors": []})
+    pressure_data_new = defaultdict(lambda: {"voltages": [], "speeds": [], "errors": []})
 
     # Read the CSV
-    with open("../drift_speed_results_gas_table_argon_new_simulation.csv", newline='') as csvfile: # !!!
+    with open("../../data/drift_speed_results_gas_table_argon.csv", newline='') as csvfile: # !!!
         reader = csv.DictReader(csvfile)
         for row in reader:
             V = float(row["Voltage[V]"])
             P = float(row["Pressure[Torr]"])
             S = float(row["MeanDriftSpeed[cm/us]"])
             E = float(row["StdDev[cm/us]"])
-            pressure_data[P]["voltages"].append(V)
-            pressure_data[P]["speeds"].append(S)
-            pressure_data[P]["errors"].append(E)
+            pressure_data_old[P]["voltages"].append(V)
+            pressure_data_old[P]["speeds"].append(S)
+            pressure_data_old[P]["errors"].append(E)
+
+    # Read the CSV
+    with open("../../drift_speed_results_gas_table_argon_new_simulation.csv", newline='') as csvfile: # !!!
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            V = float(row["Voltage[V]"])
+            P = float(row["Pressure[Torr]"])
+            S = float(row["MeanDriftSpeed[cm/us]"])
+            E = float(row["StdDev[cm/us]"])
+            pressure_data_old[P]["voltages"].append(V)
+            pressure_data_old[P]["speeds"].append(S)
+            pressure_data_old[P]["errors"].append(E)
 
     # Set up the plot
     fig, ax = plt.subplots(figsize=(8, 6))
@@ -30,13 +43,13 @@ if __name__ == "__main__":
     ax.ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
 
     # Get sorted list of pressures for consistent color mapping
-    pressures = sorted(pressure_data.keys())
+    pressures = sorted(pressure_data_old.keys())
     norm = plt.Normalize(min(pressures), max(pressures))
     cmap = plt.cm.rainbow  # color map ; other good option is "plasma"
 
     # Plot each dataset
     for pressure in pressures:
-        data = pressure_data[pressure]
+        data = pressure_data_old[pressure]
         voltages = np.array(data["voltages"])
         speeds = np.array(data["speeds"]) * 1e6
         errors = np.array(data["errors"]) * 1e6

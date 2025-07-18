@@ -74,6 +74,7 @@
         "typeinfo": "cpp",
         "try_gas_table.C": "cpp",
         "garfield_version.C": "cpp",
-        "vdr_distributions.C": "cpp"
+        "vdr_distributions.C": "cpp",
+        "new_sim.C": "cpp"
     }
 }

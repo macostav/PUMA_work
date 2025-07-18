@@ -88,61 +88,43 @@ void run_simulation(double pres, int volt, ComponentComsol *pumaModel)
   // Attach gas to pre-loaded model
   pumaModel->SetGas(&gas);
 
-  // Sensor setup
-  Sensor sensor;
-  sensor.AddComponent(pumaModel);
-  sensor.SetArea(-3, -3, -15, 3, 3, 5); // [cm]
-  std::cout << "Sensor Initialized \n";
+// Sensor setup
+Sensor sensor;
+sensor.AddComponent(pumaModel);
+sensor.SetArea(-3, -3, -15, 3, 3, 5); // [cm]
+std::cout << "Sensor Initialized \n";
 
-  // TrackHeed setup
-  TrackHeed trackHeed;
-  trackHeed.SetParticle("e-");
-  trackHeed.SetSensor(&sensor);
-  std::cout << "TrackHeed Initialized \n";
+// DriftLineRKF still available if you want to visualize field lines
+DriftLineRKF drift;
+drift.SetSensor(&sensor);
 
-  DriftLineRKF drift;
-  drift.SetSensor(&sensor);
+// Histogram for drift speeds
+TH1D* hSpeed = new TH1D("hSpeed", "Drift Speed;Speed [cm/#mu s];Counts", 10000, 0.24, 0.3);
 
-  // Histogram for e- speed
-  TH1F *hSpeed = new TH1F("hSpeed", "Electron Drift Speeds;Speed [cm/s];Counts", 100, 0, 1e6);
-
-int nElectronsTarget = 10000;
+// Run the simulation
+int nElectronsTarget = 10000; // !!! try 10,000
 int nElectronsSimulated = 0;
 
 while (nElectronsSimulated < nElectronsTarget) {
+  // Generate random photoelectron position in a circle on the top surface
   auto [x0, y0] = randInCircle();
-  double z0 = 4.32;
-  double energy = 1e6;
-  trackHeed.NewTrack(x0, y0, z0, 0, 0, -1, energy); // or (0, 0, -1, energy) if -z drift
+  double z0 = 4.32; // starting near the cathode (in cm)
+  double t0 = 0.0;
 
-  double xc, yc, zc, tc;
-  int nc, nsec;
-  double ec, esec;
+  drift.DriftElectron(x0, y0, z0, t0);
 
-  while (trackHeed.GetCluster(xc, yc, zc, tc, nc, nsec, ec, esec)) {
-    for (int i = 0; i < nc; ++i) {
-      // Stop early if we've hit the target
-      if (nElectronsSimulated >= nElectronsTarget) break;
+  double x1, y1, z1, t1;
+  int status;
+  drift.GetEndPoint(x1, y1, z1, t1, status);
+  
+  if (t1 > t0) {
+    
+    double driftLength = sqrt((x1 - x0)*(x1 - x0) + (y1 - y0)*(y1 - y0) + (z1 - z0)*(z1 - z0));
+    double dt = t1 - t0;         // ns
 
-      drift.DriftElectron(xc, yc, zc, tc);
-
-      double x1, y1, z1, t1;
-      int status2;
-      drift.GetEndPoint(x1, y1, z1, t1, status2);
-
-      double dx = x1 - xc;
-      double dy = y1 - yc;
-      double dz = z1 - zc;
-      double distance = std::sqrt(dx * dx + dy * dy + dz * dz);
-      double time = t1 - tc;
-
-      if (time > 0) {
-        double speed = distance / time; // cm/ns
-        hSpeed->Fill(speed * 1e9); // convert to cm/s
-      }
-
-      nElectronsSimulated++;
-    }
+    double vDrift = driftLength / dt * 1e3; // cm/μs
+    hSpeed->Fill(vDrift);
+    nElectronsSimulated++;
   }
 }
 
@@ -158,9 +140,24 @@ while (nElectronsSimulated < nElectronsTarget) {
   // Save as image
   cHist->SaveAs(fname.str().c_str());
 
+    // Canvas where we will draw the hist
+  TCanvas* cHistLog = new TCanvas("cHist", "Electron Speeds", 800, 600);
+  cHistLog->cd();
+  cHistLog->SetLogy();
+  hSpeed->Draw();
+
+  // Construct filename
+  std::ostringstream fnameLog;
+  fnameLog << "log_argon_drift_speed_P" << static_cast<int>(pressure) // !!!
+      << "_V" << static_cast<int>(volt) << ".png";
+
+  // Save as image
+  cHistLog->SaveAs(fnameLog.str().c_str());
+
 
   delete hSpeed;
   delete cHist;
+  delete cHistLog;
 }
 
 void safe_run_simulation(double pressure, int voltage, ComponentComsol* model) {
@@ -198,13 +195,13 @@ we move on instead of staying stuck.
 int main()
 {
 
-  std::vector<int> voltages = {200,225,250,300, 350, 400, 500, 600, 700, 800, 850, 900, 1000,
-    1100, 1200, 1300, 1400, 1500, 1600, 1603, 1700, 1800, 1900};
+  std::vector<int> voltages = {200,/*225,250,300, 350,*/ 400, /*500, 600,*/ 700,/*800, 850, 900,*/ 1000,
+    /*1100, 1200, 1300,*/ 1400, /*1500, 1600, 1603,*/ 1700, /*1800,*/ 1900};
   
   //std::vector<double> pressures = {158.0272814,305.83624583,497.8134186,703.14866857,897.54054586,1000.95292865, 1003.96149327, 
   //  1005.96709465, 1106.13661436, 1304.82907969, 1498.69503398};
 
-  std::vector<double> pressures = {158.0272814};
+  std::vector<double> pressures = {158.0272814, 703.14866857,1005.96709465, 1498.69503398};
 
   for (int voltage: voltages) {
     // Load model just once (depends only on voltage)
