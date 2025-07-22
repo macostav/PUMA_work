@@ -36,14 +36,15 @@ using namespace Garfield;
 
 int main() {
 
-    std::vector<double> pressures = {897.54054586, 1304.82907969};
+  std::vector<double> pressures = {158.0272814,305.83624583,497.8134186,703.14866857,897.54054586,1000.95292865, 1003.96149327, 
+    1005.96709465, 1106.13661436, 1304.82907969, 1498.69503398};
 
   
   for (double pressure: pressures){
     // Setup gas
     
   MediumMagboltz gas;
-  gas.SetMaxElectronEnergy(500.);     // retry here
+  gas.SetMaxElectronEnergy(50.);     // retry here
   gas.EnableAutoEnergyLimit(false); // use the max electron energy specified above
   gas.SetTemperature(293.15);
   gas.SetPressure(pressure);
@@ -52,9 +53,9 @@ int main() {
   
   
 
-  std::string gasFileName = "argon_" + std::to_string(int(pressure)) + "Torr.gas";
+  std::string gasFileName = "new_argon_" + std::to_string(int(pressure)) + "Torr.gas";
   std::cout << "Generating new gas table for " << pressure << " Torr...\n";
-  gas.GenerateGasTable(5, true);
+  gas.GenerateGasTable(10, true);
   gas.WriteGasFile(gasFileName);
   }
 }

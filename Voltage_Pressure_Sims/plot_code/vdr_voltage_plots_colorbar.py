@@ -11,7 +11,7 @@ if __name__ == "__main__":
     pressure_data = defaultdict(lambda: {"voltages": [], "speeds": [], "errors": []})
 
     # Read the CSV
-    with open("../drift_speed_results_gas_table_argon_new_simulation.csv", newline='') as csvfile: # !!!
+    with open("../data/drift_speed_results_gas_table_xenon_new_simulation.csv", newline='') as csvfile: # !!!
         reader = csv.DictReader(csvfile)
         for row in reader:
             V = float(row["Voltage[V]"])
@@ -46,7 +46,7 @@ if __name__ == "__main__":
                     label=f"{pressure:.1f} Torr", capsize=3)
 
     # Labels and title
-    ax.set_title("Argon Simulation") # !!!
+    ax.set_title("Xenon Simulation") # !!!
     ax.set_xlabel("Voltage [V]")
     ax.set_ylabel("Drift Speed [cm/s]")
 
@@ -63,4 +63,4 @@ if __name__ == "__main__":
     #plt.xlim(475, 650)
     #plt.ylim(2e5,7e5)
     plt.tight_layout()
-    plt.savefig("vdr_voltage_argon_new_sim.png", dpi=300) # !!!
+    plt.savefig("vdr_voltage_xenon_new_sim.png", dpi=300) # !!!

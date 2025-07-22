@@ -15,6 +15,7 @@
 #include <TCanvas.h>
 #include <TH1F.h>
 #include <TFile.h>
+#include <TGraph.h>
 #include "Garfield/ComponentComsol.hh"
 #include "Garfield/TrackHeed.hh"
 #include "Garfield/ViewCell.hh"
@@ -69,18 +70,21 @@ void run_simulation(double pres, int volt, ComponentComsol *pumaModel)
   gas.SetTemperature(293.15);
   gas.SetPressure(pressure);
   gas.SetComposition("Ar", 100.); // !!! Can change this
-  //gas.LoadIonMobility("/home/macosta/ella_work/PUMA_Tests/Simulations/IonMobility_Xe+_P32_Xe.txt");
+  // gas.LoadIonMobility("/home/macosta/ella_work/PUMA_Tests/Simulations/IonMobility_Xe+_P32_Xe.txt");
   gas.LoadIonMobility("/home/macosta/ella_work/PUMA_Tests/Simulations/IonMobility_Ar+_Ar.txt");
 
   std::string gasFileName = "gas_tables/argon_" + std::to_string(int(pressure)) + "Torr.gas"; // !!!
-    
-    if (!gas.LoadGasFile(gasFileName)) {
-        std::cout << "Generating new gas table for " << pressure << " Torr...\n";
-        gas.GenerateGasTable(5, false);
-        gas.WriteGasFile(gasFileName);
-    } else {
-        std::cout << "Loaded existing gas table for " << pressure << " Torr\n";
-    }
+
+  if (!gas.LoadGasFile(gasFileName))
+  {
+    std::cout << "Generating new gas table for " << pressure << " Torr...\n";
+    gas.GenerateGasTable(5, false);
+    gas.WriteGasFile(gasFileName);
+  }
+  else
+  {
+    std::cout << "Loaded existing gas table for " << pressure << " Torr\n";
+  }
 
   gas.Initialise(false);
   std::cout << "Gas Initialized \n";
@@ -88,137 +92,147 @@ void run_simulation(double pres, int volt, ComponentComsol *pumaModel)
   // Attach gas to pre-loaded model
   pumaModel->SetGas(&gas);
 
-// Sensor setup
-Sensor sensor;
-sensor.AddComponent(pumaModel);
-sensor.SetArea(-3, -3, -15, 3, 3, 5); // [cm]
-std::cout << "Sensor Initialized \n";
+  // Sensor setup
+  Sensor sensor;
+  sensor.AddComponent(pumaModel);
+  sensor.SetArea(-3, -3, -15, 3, 3, 5); // [cm]
+  std::cout << "Sensor Initialized \n";
 
-// DriftLineRKF still available if you want to visualize field lines
-DriftLineRKF drift;
-drift.SetSensor(&sensor);
+  // DriftLineRKF still available if you want to visualize field lines
+  DriftLineRKF drift;
+  drift.SetSensor(&sensor);
 
-// Histogram for drift speeds
-TH1D* hSpeed = new TH1D("hSpeed", "Drift Speed;Speed [cm/#mu s];Counts", 10000, 0.24, 0.3);
+  // Histogram for drift speeds
+  TH1D *hSpeed = new TH1D("hSpeed", "Drift Speed;Speed [cm/#mu s];Counts", 10000, 0.24, 0.3);
 
-// Run the simulation
-int nElectronsTarget = 10000; // !!! try 10,000
-int nElectronsSimulated = 0;
+  // Run the simulation
+  int nElectronsTarget = 10000; // !!! try 10,000
+  int nElectronsSimulated = 0;
 
-while (nElectronsSimulated < nElectronsTarget) {
-  // Generate random photoelectron position in a circle on the top surface
-  auto [x0, y0] = randInCircle();
-  double z0 = 4.32; // starting near the cathode (in cm)
-  double t0 = 0.0;
+  std::vector<double> zDistances;
+  std::vector<double> driftSpeeds;
 
-  drift.DriftElectron(x0, y0, z0, t0);
+  while (nElectronsSimulated < nElectronsTarget)
+  {
+    // Generate random photoelectron position in a circle on the top surface
+    auto [x0, y0] = randInCircle();
+    double z0 = 4.32; // starting near the cathode (in cm)
+    double t0 = 0.0;
 
-  double x1, y1, z1, t1;
-  int status;
-  drift.GetEndPoint(x1, y1, z1, t1, status);
-  
-  if (t1 > t0) {
-    
-    double driftLength = sqrt((x1 - x0)*(x1 - x0) + (y1 - y0)*(y1 - y0) + (z1 - z0)*(z1 - z0));
-    double dt = t1 - t0;         // ns
+    drift.DriftElectron(x0, y0, z0, t0);
 
-    double vDrift = driftLength / dt * 1e3; // cm/μs
-    hSpeed->Fill(vDrift);
-    nElectronsSimulated++;
+    double x1, y1, z1, t1;
+    int status;
+    drift.GetEndPoint(x1, y1, z1, t1, status);
+
+    if (t1 > t0)
+    {
+
+      double driftLength = sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0) + (z1 - z0) * (z1 - z0));
+      zDistances.push_back((z1 - z0));
+      double dt = t1 - t0; // ns
+
+      double vDrift = driftLength / dt * 1e3; // cm/μs
+      driftSpeeds.push_back(vDrift);
+      hSpeed->Fill(vDrift);
+      nElectronsSimulated++;
+    }
   }
-}
+
+  // Save drift speed vs z-distance graph
+  std::ostringstream gname;
+  gname << "vdr_distance_P" << static_cast<int>(pressure) << "_V" << static_cast<int>(volt) << ".root";
+  TGraph *graph = new TGraph(zDistances.size(), zDistances.data(), driftSpeeds.data());
+  graph->SetTitle(";z-Distance [cm];Drift Speed [cm/#mu s]");
+
+  // Save it to a ROOT file
+
+  TFile *file = new TFile(gname.str().c_str(), "RECREATE");
+  graph->Write("vdr_distance");
+  file->Close();
 
   // Canvas where we will draw the hist
-  TCanvas* cHist = new TCanvas("cHist", "Electron Speeds", 800, 600);
+  TCanvas *cHist = new TCanvas("cHist", "Electron Speeds", 800, 600);
   hSpeed->Draw();
 
   // Construct filename
   std::ostringstream fname;
   fname << "argon_drift_speed_P" << static_cast<int>(pressure) // !!!
-      << "_V" << static_cast<int>(volt) << ".png";
+        << "_V" << static_cast<int>(volt) << ".png";
 
   // Save as image
   cHist->SaveAs(fname.str().c_str());
 
-    // Canvas where we will draw the hist
-  TCanvas* cHistLog = new TCanvas("cHist", "Electron Speeds", 800, 600);
-  cHistLog->cd();
-  cHistLog->SetLogy();
-  hSpeed->Draw();
-
-  // Construct filename
-  std::ostringstream fnameLog;
-  fnameLog << "log_argon_drift_speed_P" << static_cast<int>(pressure) // !!!
-      << "_V" << static_cast<int>(volt) << ".png";
-
-  // Save as image
-  cHistLog->SaveAs(fnameLog.str().c_str());
-
-
   delete hSpeed;
   delete cHist;
-  delete cHistLog;
+  delete graph;
 }
 
-void safe_run_simulation(double pressure, int voltage, ComponentComsol* model) {
-/*
-This function runs simulation. But if for whatever reason we get stuck at a particular pressure or volume for a long time,
-we move on instead of staying stuck.
-*/
+void safe_run_simulation(double pressure, int voltage, ComponentComsol *model)
+{
+  /*
+  This function runs simulation. But if for whatever reason we get stuck at a particular pressure or volume for a long time,
+  we move on instead of staying stuck.
+  */
 
-    pid_t pid = fork();
-    if (pid == 0) {
-        // Child process
-        run_simulation(pressure, voltage, model);
-        exit(0);
-    } else if (pid > 0) {
-        // Parent process: wait with timeout
-        int status;
-        int timeout_seconds = 1800;  // Adjust this
-        int waited = 0;
+  pid_t pid = fork();
+  if (pid == 0)
+  {
+    // Child process
+    run_simulation(pressure, voltage, model);
+    exit(0);
+  }
+  else if (pid > 0)
+  {
+    // Parent process: wait with timeout
+    int status;
+    int timeout_seconds = 1800; // Adjust this
+    int waited = 0;
 
-        while (waitpid(pid, &status, WNOHANG) == 0 && waited < timeout_seconds) {
-            sleep(1);
-            waited++;
-        }
-
-        if (waited >= timeout_seconds) {
-            std::cerr << "Timeout for pressure " << pressure << ", killing process\n";
-            kill(pid, SIGKILL);
-            waitpid(pid, &status, 0);  // Clean up
-        }
-    } else {
-        std::cerr << "Fork failed\n";
+    while (waitpid(pid, &status, WNOHANG) == 0 && waited < timeout_seconds)
+    {
+      sleep(1);
+      waited++;
     }
+
+    if (waited >= timeout_seconds)
+    {
+      std::cerr << "Timeout for pressure " << pressure << ", killing process\n";
+      kill(pid, SIGKILL);
+      waitpid(pid, &status, 0); // Clean up
+    }
+  }
+  else
+  {
+    std::cerr << "Fork failed\n";
+  }
 }
 
 int main()
 {
 
-  std::vector<int> voltages = {200,/*225,250,300, 350,*/ 400, /*500, 600,*/ 700,/*800, 850, 900,*/ 1000,
-    /*1100, 1200, 1300,*/ 1400, /*1500, 1600, 1603,*/ 1700, /*1800,*/ 1900};
-  
-  //std::vector<double> pressures = {158.0272814,305.83624583,497.8134186,703.14866857,897.54054586,1000.95292865, 1003.96149327, 
-  //  1005.96709465, 1106.13661436, 1304.82907969, 1498.69503398};
+  std::vector<int> voltages = {1000, 1400, 1700, 1900};
 
-  std::vector<double> pressures = {158.0272814, 703.14866857,1005.96709465, 1498.69503398};
+  std::vector<double> pressures = {1498.69503398};
 
-  for (int voltage: voltages) {
+  for (int voltage : voltages)
+  {
     // Load model just once (depends only on voltage)
     std::ostringstream potFile;
     potFile << "/home/macosta/PUMA/miguel_work/Voltage_Pressure_Sims/Comsol_Files/potential_" << voltage << ".txt";
 
     ComponentComsol pumaModel;
     pumaModel.Initialise(
-      "/home/macosta/PUMA/miguel_work/Voltage_Pressure_Sims/Comsol_Files/mesh.mphtxt",
-      "/home/macosta/ella_work/PUMA_Tests/Simulations/dielectric_py.txt",
-      potFile.str(), "mm");
+        "/home/macosta/PUMA/miguel_work/Voltage_Pressure_Sims/Comsol_Files/mesh.mphtxt",
+        "/home/macosta/ella_work/PUMA_Tests/Simulations/dielectric_py.txt",
+        potFile.str(), "mm");
 
-      std::cout << "Model Initialized \n";
-      for (double pressure : pressures) {
-        safe_run_simulation(pressure, voltage, &pumaModel);
-      }
+    std::cout << "Model Initialized \n";
+    for (double pressure : pressures)
+    {
+      safe_run_simulation(pressure, voltage, &pumaModel);
     }
-      
+  }
+
   return 0;
 }

@@ -157,7 +157,7 @@ we move on instead of staying stuck.
     } else if (pid > 0) {
         // Parent process: wait with timeout
         int status;
-        int timeout_seconds = 1800;  // Adjust this
+        int timeout_seconds = 2500;  // Adjust this
         int waited = 0;
 
         while (waitpid(pid, &status, WNOHANG) == 0 && waited < timeout_seconds) {
@@ -177,7 +177,7 @@ we move on instead of staying stuck.
 
 int main()
 {
-  std::string csvFileName = "drift_speed_results_gas_table_xenon_new_simulation.csv"; // !!!
+  std::string csvFileName = "drift_speed_results_gas_table_xenon_new_simulation_2.csv"; // !!!
 
   // Create or clear file, and write header only once
   if (!std::filesystem::exists(csvFileName)) {
@@ -186,11 +186,11 @@ int main()
     csvFile.close();
   }
 
-  std::vector<int> voltages = {200,225,250,300, 350, 400, 500, 600, 700, 800, 850, 900, 1000,
+  std::vector<int> voltages = {/*200,225,250,300, 350, 400, 500,*/ 600, 700, 800, 850, 900, 1000,
     1100, 1200, 1300, 1400, 1500, 1600, 1603, 1700, 1800, 1900};
   
-  std::vector<double> pressures = {158.0272814,305.83624583,497.8134186,703.14866857,897.54054586,1000.95292865, 1003.96149327, 
-    1005.96709465, 1106.13661436, 1304.82907969, 1498.69503398};
+  std::vector<double> pressures = {/*158.0272814,305.83624583,*/497.8134186/*,703.14866857,897.54054586,1000.95292865, 1003.96149327, 
+    1005.96709465, 1106.13661436, 1304.82907969, 1498.69503398*/};
 
   for (int voltage: voltages) {
     // Load model just once (depends only on voltage)
