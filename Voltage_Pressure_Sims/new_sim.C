@@ -13,6 +13,7 @@
 
 #include <TApplication.h>
 #include <TCanvas.h>
+#include <TGraph.h>
 #include <TH1F.h>
 #include <TFile.h>
 #include "Garfield/ComponentComsol.hh"
@@ -103,11 +104,12 @@ TH1D* hSpeed = new TH1D("hSpeed", "Drift Speed;Speed [cm/#mu s];Counts", 100, 0,
 // Run the simulation
 int nElectronsTarget = 10000; //
 int nElectronsSimulated = 0;
+int totalAttempts = 0; // will use for looking at geometric grid transparency
 
 while (nElectronsSimulated < nElectronsTarget) {
   // Generate random photoelectron position in a circle on the top surface
   auto [x0, y0] = randInCircle();
-  double z0 = 4.32; // starting after the top grid (in cm)
+  double z0 = 4.47; // [cm] ; note cathode is at 4.493 cm
   double t0 = 0.0;
 
   drift.DriftElectron(x0, y0, z0, t0);
@@ -115,7 +117,11 @@ while (nElectronsSimulated < nElectronsTarget) {
   double x1, y1, z1, t1;
   int status;
   drift.GetEndPoint(x1, y1, z1, t1, status);
-  
+  totalAttempts++;
+  nElectronsSimulated++;
+
+  std::cout << "ENDPOINT: (" << x1 << "," << y1 << "," << z1 << ")\n" << std::endl; 
+  /*
   if (t1 > t0 && z1 < 0.47) { // check that electron did not get trapped in grid
 
     double driftLength = sqrt((x1 - x0)*(x1 - x0) + (y1 - y0)*(y1 - y0) + (z1 - z0)*(z1 - z0));
@@ -124,7 +130,7 @@ while (nElectronsSimulated < nElectronsTarget) {
     double vDrift = driftLength / dt * 1e3; // cm/μs
     hSpeed->Fill(vDrift);
     nElectronsSimulated++;
-  }
+  }*/
 }
 
 
@@ -137,8 +143,61 @@ while (nElectronsSimulated < nElectronsTarget) {
 
   // Append results to csvFile
   std::ofstream csvFile(csvFileName, std::ios::app);
-  csvFile << volt << "," << pressure << "," << mean_drift_speed << "," << sigma_drift_speed << "\n";
+  csvFile << volt << "," << pressure << "," << mean_drift_speed << "," << sigma_drift_speed<< "," << totalAttempts << "\n";
   csvFile.close();
+
+// START OF STUFF !!!
+  
+// Extract electric field along z-axis and create plot
+const double zMin = 3.5; // cm
+const double zMax = 4.6;   // cm
+const int nPoints = 200;
+
+// Create arrays for TGraph
+double* zArray = new double[nPoints+1];
+double* ezArray = new double[nPoints+1];
+
+std::ofstream efieldFile("Efield_vs_z.txt");
+efieldFile << "# z [cm]\tEz [V/cm]\n";
+
+for (int i = 0; i <= nPoints; ++i) {
+  double z = zMin + i * (zMax - zMin) / nPoints;
+  std::array<double, 3> efield = pumaModel->ElectricField(0.0, 0.0, z);
+  double ez = efield[2];
+  efieldFile << z << "\t" << ez << "\n";
+  
+  // Fill arrays for TGraph
+  zArray[i] = z;
+  ezArray[i] = ez;
+}
+
+efieldFile.close();
+std::cout << "Electric field profile saved to Efield_vs_z.txt\n";
+
+// Create TGraph for continuous function plot
+TGraph* grEfield = new TGraph(nPoints+1, zArray, ezArray);
+grEfield->SetTitle("Electric Field vs Z;Z [cm];E_{z} [V/cm]");
+grEfield->SetLineColor(kBlue);
+grEfield->SetLineWidth(2);
+grEfield->SetMarkerStyle(0); // No markers, just line
+
+// Create canvas and plot
+TCanvas* c1 = new TCanvas("c1", "Electric Field Profile", 800, 600);
+c1->SetGrid();
+
+grEfield->Draw("AL"); // A = with axes, L = line
+
+// Save as PNG
+c1->SaveAs("Efield_vs_z.png");
+std::cout << "Electric field plot saved to Efield_vs_z.png\n";
+
+// Clean up
+delete[] zArray;
+delete[] ezArray;
+delete grEfield;
+delete c1;
+
+  // END OF STUFF !!!
 
   delete hSpeed;
 }
@@ -182,12 +241,12 @@ int main()
   // Create or clear file, and write header only once
   if (!std::filesystem::exists(csvFileName)) {
     std::ofstream csvFile(csvFileName);
-    csvFile << "Voltage[V],Pressure[Torr],MeanDriftSpeed[cm/us],StdDev[cm/us]\n";
+    csvFile << "Voltage[V],Pressure[Torr],MeanDriftSpeed[cm/us],StdDev[cm/us],TotalAttempts\n";
     csvFile.close();
   }
 
-  std::vector<int> voltages = {200,225,250,300, 350, 400, 500, 600, 700, 800, 850, 900, 1000,
-    1100, 1200, 1300, 1400, 1500, 1600, 1603, 1700, 1800, 1900};
+  std::vector<int> voltages = {/*200,225,250,300, 350, 400, 500, 600, 700, 800, 850, 900, 1000,
+    1100, 1200, 1300, 1400, 1500, 1600, 1603, 1700, 1800,*/ 1900};
   
   std::vector<double> pressures = {158.0272814,305.83624583, 497.8134186 ,703.14866857,897.54054586,1000.95292865, 1003.96149327, 
     1005.96709465, 1106.13661436, 1304.82907969, 1498.69503398};

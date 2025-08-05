@@ -6,13 +6,11 @@ Plots the electric field vs z for the center of PUMA. This is done with HV 200V.
 """
 if __name__ == "__main__":
     # Load the data
-    #z_before, efield_before = np.loadtxt("efield_vs_z.txt", unpack=True)
     z_after, efield_after = np.loadtxt("../Efield_vs_z.txt", unpack=True)
 
     # Plot
     plt.figure(figsize=(8, 6))
-    #plt.plot(z_before, efield_before, marker='o', linestyle='-', color='blue', markersize=4, label='Before Fix')
-    plt.plot(z_after, efield_after, marker='o', linestyle='-', color='red', markersize=4, label = 'After Fix')
+    plt.plot(z_after, efield_after, marker='o', linestyle='-', color='red', markersize=4)
 
     # Region definitions
     region_edges = [0.307, 0.47, 1.361,2.096, 2.831, 3.566, 4.357, 4.520]  # Define your region boundaries here
@@ -28,7 +26,7 @@ if __name__ == "__main__":
         region_patches.append(patch)
 
     # Labels and title with increased font size
-    plt.title("Electric Field vs Z (Center of PUMA, 1600V HV)", fontsize=18)
+    plt.title("Electric Potential vs Z (Center of PUMA, 1600V HV)", fontsize=18)
     plt.xlabel("Z [cm]", fontsize=16)
     plt.ylabel("Electric Field [V/cm]", fontsize=16)
     plt.xticks(fontsize=14)
@@ -40,6 +38,5 @@ if __name__ == "__main__":
     #plt.legend(handles=line_handles + region_patches, fontsize=11, loc='upper right', frameon=True)
 
     plt.tight_layout()
-    #plt.ylim(-500, 1000)  # Sets x-axis from 0 to 5
-    plt.savefig("efield_vs_z.png", dpi=300)
-    plt.show()
+    plt.ylim(-100, 100)  # Sets x-axis from 0 to 5
+    plt.savefig("potential_vs_z.png", dpi=300)
