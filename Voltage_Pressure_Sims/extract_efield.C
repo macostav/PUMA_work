@@ -15,7 +15,7 @@ int main() {
   pumaModel.Initialise(
       "/home/macosta/PUMA/miguel_work/Voltage_Pressure_Sims/Comsol_Files/mesh.mphtxt",
       "/home/macosta/ella_work/PUMA_Tests/Simulations/dielectric_py.txt",
-      "/home/macosta/PUMA/miguel_work/Voltage_Pressure_Sims/Comsol_Files/potential_300_new.txt", "mm");
+      "/home/macosta/PUMA/miguel_work/Voltage_Pressure_Sims/Comsol_Files/potential_800_new.txt", "mm");
 
   // Setup gas
   MediumMagboltz gas;

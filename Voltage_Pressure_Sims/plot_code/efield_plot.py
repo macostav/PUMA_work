@@ -38,5 +38,5 @@ if __name__ == "__main__":
     #plt.legend(handles=line_handles + region_patches, fontsize=11, loc='upper right', frameon=True)
 
     plt.tight_layout()
-    plt.ylim(-100, 100)  # Sets x-axis from 0 to 5
+    plt.ylim(-100, 400)  # Sets x-axis from 0 to 5
     plt.savefig("potential_vs_z.png", dpi=300)
