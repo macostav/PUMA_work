@@ -7,6 +7,11 @@
 
 using namespace Garfield;
 
+"""
+Extract the electric field and electric potential as a function of z for the COMSOL model. This helps diagnose
+whether the electric field / potential is as expected.
+"""
+
 int main() {
   const double pressure = 305.83624583; // Torr
 
