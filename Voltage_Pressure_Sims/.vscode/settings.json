@@ -76,6 +76,7 @@
         "garfield_version.C": "cpp",
         "vdr_distributions.C": "cpp",
         "new_sim.C": "cpp",
-        "optional": "cpp"
+        "optional": "cpp",
+        "e_drift_sim.C": "cpp"
     }
 }

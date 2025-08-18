@@ -6,15 +6,15 @@ Plots the electric field vs z for the center of PUMA.
 """
 if __name__ == "__main__":
     # Load the data
-    z_center, efield_center = np.loadtxt("../Potential_vs_z_center.txt", unpack=True)
-    z_in, efield_in = np.loadtxt("../Potential_vs_z_small_offset.txt", unpack = True)
-    z_out, efield_out = np.loadtxt("../Potential_vs_z_outside.txt", unpack = True)
+    z_center, efield_center = np.loadtxt("Efield_vs_z_outside.txt", unpack=True)
+    #z_in, efield_in = np.loadtxt("../Potential_vs_z_small_offset.txt", unpack = True)
+    #z_out, efield_out = np.loadtxt("../Potential_vs_z_outside.txt", unpack = True)
 
     # Plot
     plt.figure(figsize=(8, 6))
     plt.plot(z_center, efield_center, marker='o', linestyle='-', color='red', markersize=4, label = 'Center of PUMA')
-    plt.plot(z_in, efield_in, marker = 'o', linestyle = "-", color = 'blue', markersize=4, label = 'Small Offset from Center (x = 3mm)')
-    plt.plot(z_out, efield_out, marker ='o', linestyle = "-", color = "green", markersize=4, label = 'Outside of Cathode (x = 6mm)')
+    #plt.plot(z_in, efield_in, marker = 'o', linestyle = "-", color = 'blue', markersize=4, label = 'Small Offset from Center (x = 3mm)')
+    #plt.plot(z_out, efield_out, marker ='o', linestyle = "-", color = "green", markersize=4, label = 'Outside of Cathode (x = 6mm)')
 
     # Region definitions
     region_edges = [0.307, 0.47, 1.361,2.096, 2.831, 3.566, 4.357, 4.520]  # Define your region boundaries here
@@ -44,5 +44,5 @@ if __name__ == "__main__":
 
     plt.tight_layout()
     #plt.xlim(0.2, 4.7)
-    #plt.ylim(-500,1000)
+    plt.ylim(-500,1000)
     plt.savefig("potential_vs_z.png", dpi=300)

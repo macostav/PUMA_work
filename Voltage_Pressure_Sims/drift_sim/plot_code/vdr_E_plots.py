@@ -6,6 +6,10 @@ from matplotlib.cm import ScalarMappable
 from matplotlib.ticker import ScalarFormatter
 from collections import defaultdict
 
+"""
+Plotting drift velocity vs E/N based on simulation data.
+"""
+
 def HV_to_E(HV):
     '''
     Using the values I currently have in efield.xlsx, calculate the 
