@@ -29,7 +29,7 @@ int main() {
   efieldFile << "# z [cm]\tEz [V/cm]\n";
   
   // Offset from center of PUMA
-  double x = 0.6; // [cm]
+  double x = 0.2; // [cm]
   double y = 0.0; // [cm]
 
   for (int i = 0; i <= nPoints; ++i) {
@@ -41,6 +41,8 @@ int main() {
 
   efieldFile.close();
   std::cout << "Electric field profile saved to Efield_vs_z.txt\n";
+
+  // Redundant to have two loops but less cluttered this way
 
   std::ofstream potentialFile("Potential_vs_z_outside.txt");
   potentialFile << "# z [cm]\tV [V]\n";

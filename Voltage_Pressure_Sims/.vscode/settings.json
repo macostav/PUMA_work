@@ -77,6 +77,7 @@
         "vdr_distributions.C": "cpp",
         "new_sim.C": "cpp",
         "optional": "cpp",
-        "e_drift_sim.C": "cpp"
+        "e_drift_sim.C": "cpp",
+        "avg_efield.C": "cpp"
     }
 }
